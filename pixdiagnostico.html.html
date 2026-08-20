@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pagamento — Sessão de Diagnóstico — Bloom English Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant:wght@400;500;600&family=Nunito:wght@300;400;600;700&family=Comfortaa:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  :root{
+    --bg: #f7ece8;
+    --card: #fffaf8;
+    --rose: #c98a94;
+    --rose-soft: #f0d9d4;
+    --olive: #6b7355;
+    --olive-dark: #565e44;
+    --ink: #3a382f;
+    --ink-soft: #7a7568;
+    --line: #e7d3ce;
+  }
+  *{ box-sizing: border-box; margin:0; padding:0; }
+  body{ background: var(--bg); font-family:'Nunito', sans-serif; color: var(--ink); min-height:100vh; padding: 48px 20px 80px; }
+  .wrap{ max-width: 460px; margin: 0 auto; }
+  .box{
+    background: var(--card); border-radius:22px; padding:34px 30px; text-align:center;
+    box-shadow: 0 10px 30px -18px rgba(107,115,85,0.25); border:1px solid var(--line);
+  }
+  .eyebrow{
+    font-family:'Comfortaa', sans-serif; font-size:12px; letter-spacing:0.14em; text-transform:uppercase;
+    color: var(--rose); margin-bottom:8px;
+  }
+  h1{ font-family:'Cormorant', serif; font-weight:500; font-size:28px; color: var(--olive-dark); margin-bottom:6px; }
+  .valor{ font-family:'Comfortaa', sans-serif; font-size:34px; color: var(--olive-dark); margin: 10px 0 22px; }
+  .valor span{ font-size:16px; color: var(--ink-soft); }
+  #qrcode{ display:inline-block; padding:16px; background:#fff; border-radius:16px; border:1.5px solid var(--line); margin-bottom:18px; }
+  .copy-row{ display:flex; gap:8px; }
+  input#pixCode{
+    flex:1; font-family:'Nunito', sans-serif; font-size:12px; color: var(--ink-soft); background:#fff;
+    border:1.5px solid var(--line); border-radius:10px; padding:10px 12px; outline:none;
+  }
+  button#copyBtn{
+    font-family:'Comfortaa', sans-serif; font-size:13px; color:#fff; background: var(--olive);
+    border:none; padding:10px 18px; border-radius:10px; cursor:pointer; white-space:nowrap;
+    transition: background .2s ease;
+  }
+  button#copyBtn:hover{ background: var(--olive-dark); }
+  button#copyBtn.copied{ background: var(--rose); }
+  .note{ font-size:12.5px; color: var(--ink-soft); margin-top:16px; font-style:italic; }
+  .saudacao{ font-size:14px; color: var(--ink-soft); margin-bottom:4px; }
+  .ja-pagou-wrap{ margin-top:22px; padding-top:20px; border-top:1px dashed var(--line); }
+  button#jaPaguiBtn{
+    font-family:'Comfortaa', sans-serif; font-size:14px; color:#fff; background: var(--rose);
+    border:none; padding:13px 22px; border-radius:12px; cursor:pointer; width:100%;
+    transition: background .2s ease;
+  }
+  button#jaPaguiBtn:hover{ background:#b8747f; }
+  button#jaPaguiBtn:disabled{ opacity:.6; cursor:default; }
+  .pagamento-erro{ display:none; font-size:12.5px; color:#a5433f; margin-top:10px; }
+  .pagamento-erro.show{ display:block; }
+  .obrigada{ display:none; }
+  .obrigada.show{ display:block; }
+  .box.hide{ display:none; }
+  .obrigada h1{ margin-bottom:14px; }
+  .obrigada p{ font-size:14.5px; color: var(--ink-soft); line-height:1.6; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="box" id="pagamentoBox">
+    <div class="eyebrow">Sessão de diagnóstico</div>
+    <p class="saudacao" id="saudacao"></p>
+    <h1>Pagamento via Pix</h1>
+    <div class="valor">R$ 75<span>,00</span></div>
+
+    <div id="qrcode"></div>
+
+    <div class="copy-row">
+      <input type="text" id="pixCode" readonly>
+      <button id="copyBtn" type="button">Copiar código</button>
+    </div>
+
+    <p class="note">Escaneie o QR code ou copie o código Pix acima para concluir o pagamento.</p>
+
+    <div class="ja-pagou-wrap">
+      <button id="jaPaguiBtn" type="button">Já paguei</button>
+      <p class="pagamento-erro" id="pagamentoErro">Não foi possível confirmar agora. Tente novamente em instantes.</p>
+    </div>
+  </div>
+
+  <div class="box obrigada" id="obrigadaBox">
+    <div class="eyebrow">Sessão de diagnóstico</div>
+    <h1>Pagamento confirmado 🌸</h1>
+    <p>Recebemos sua confirmação! Em breve entraremos em contato pelo WhatsApp para agendar o horário da sua sessão de diagnóstico.</p>
+  </div>
+</div>
+
+<script>
+  // ===== Configuração do recebedor =====
+  const PIX_CONFIG = {
+    chave: "65528718000109",       // CNPJ sem pontuação
+    nome: "VIRGINIA C M MORA",     // até 25 caracteres
+    cidade: "JARAGUA DO SUL",      // até 15 caracteres
+    valor: "75.00",
+    txid: "DIAGBLOOM"              // identificador (até 25 caracteres alfanuméricos)
+  };
+
+  // ===== Gerador do payload Pix (BR Code / EMV) =====
+  function campo(id, valor) {
+    const tamanho = String(valor.length).padStart(2, '0');
+    return id + tamanho + valor;
+  }
+
+  function crc16(payload) {
+    let polinomio = 0x1021;
+    let resultado = 0xFFFF;
+    for (let i = 0; i < payload.length; i++) {
+      resultado ^= (payload.charCodeAt(i) << 8);
+      for (let b = 0; b < 8; b++) {
+        if ((resultado & 0x8000) !== 0) {
+          resultado = ((resultado << 1) ^ polinomio) & 0xFFFF;
+        } else {
+          resultado = (resultado << 1) & 0xFFFF;
+        }
+      }
+    }
+    let hex = resultado.toString(16).toUpperCase();
+    while (hex.length < 4) hex = "0" + hex;
+    return hex;
+  }
+
+  function gerarPayloadPix(cfg) {
+    const nome = cfg.nome.substring(0, 25);
+    const cidade = cfg.cidade.substring(0, 15);
+    const txid = (cfg.txid || "***").substring(0, 25);
+    const valor = Number(cfg.valor).toFixed(2);
+
+    const gui = campo('00', 'br.gov.bcb.pix');
+    const chaveField = campo('01', cfg.chave);
+    const merchantAccountInfo = campo('26', gui + chaveField);
+
+    const mcc = campo('52', '0000');
+    const moeda = campo('53', '986');
+    const valorField = campo('54', valor);
+    const pais = campo('58', 'BR');
+    const nomeField = campo('59', nome);
+    const cidadeField = campo('60', cidade);
+
+    const refLabel = campo('05', txid);
+    const dadosAdicionais = campo('62', refLabel);
+
+    let payload =
+      campo('00', '01') +
+      merchantAccountInfo +
+      mcc +
+      moeda +
+      valorField +
+      pais +
+      nomeField +
+      cidadeField +
+      dadosAdicionais +
+      '6304';
+
+    return payload + crc16(payload);
+  }
+
+  // ===== Geração do QR code e código para copiar =====
+  const pixPayload = gerarPayloadPix(PIX_CONFIG);
+  document.getElementById('pixCode').value = pixPayload;
+
+  new QRCode(document.getElementById("qrcode"), {
+    text: pixPayload,
+    width: 200,
+    height: 200,
+    colorDark: "#3a382f",
+    colorLight: "#ffffff"
+  });
+
+  document.getElementById('copyBtn').addEventListener('click', function(){
+    const input = document.getElementById('pixCode');
+    input.select();
+    input.setSelectionRange(0, 99999);
+    navigator.clipboard.writeText(input.value).then(() => {
+      this.textContent = "Copiado!";
+      this.classList.add('copied');
+      setTimeout(() => {
+        this.textContent = "Copiar código";
+        this.classList.remove('copied');
+      }, 2000);
+    });
+  });
+
+  // ===== Dados do aluno vindos do formulário de diagnóstico (via URL) =====
+  const urlParams = new URLSearchParams(window.location.search);
+  const alunoNome = urlParams.get('nome') || '';
+  const alunoEmail = urlParams.get('email') || '';
+  const alunoWhatsapp = urlParams.get('whatsapp') || '';
+
+  if (alunoNome) {
+    document.getElementById('saudacao').textContent = 'Olá, ' + alunoNome.split(' ')[0] + '!';
+  }
+
+  // ===== Confirmação de pagamento ("Já paguei") =====
+  // Mesmo Web App do Google Apps Script usado pelo formulário de diagnóstico.
+  const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby55bjQkGyrfzspwrk8Fxx1i-ujblSz1qvkfNKh__2HH0h_fL42SCwMFfyiVFRCqQPt/exec";
+
+  const jaPaguiBtn = document.getElementById('jaPaguiBtn');
+  const pagamentoBox = document.getElementById('pagamentoBox');
+  const obrigadaBox = document.getElementById('obrigadaBox');
+  const pagamentoErro = document.getElementById('pagamentoErro');
+
+  jaPaguiBtn.addEventListener('click', async function(){
+    pagamentoErro.classList.remove('show');
+    jaPaguiBtn.disabled = true;
+    jaPaguiBtn.textContent = "Confirmando...";
+
+    const payload = {
+      evento: "pagamento_confirmado",
+      tipo_formulario: "Diagnóstico",
+      nome: alunoNome,
+      email: alunoEmail,
+      whatsapp: alunoWhatsapp,
+      valor: "75.00",
+      data_confirmacao: new Date().toLocaleString('pt-BR')
+    };
+
+    try {
+      if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL.includes("COLE_AQUI")) {
+        throw new Error("URL do Apps Script não configurada ainda.");
+      }
+      await fetch(GOOGLE_SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      pagamentoBox.classList.add('hide');
+      obrigadaBox.classList.add('show');
+    } catch (err) {
+      pagamentoErro.classList.add('show');
+      jaPaguiBtn.disabled = false;
+      jaPaguiBtn.textContent = "Já paguei";
+    }
+  });
+</script>
+</body>
+</html>
