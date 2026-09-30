@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Preposition Sorteador — Bloom English Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,400;0,600;1,400;1,600&family=Comfortaa:wght@400;700&family=Nunito:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --olive: #6B7355;
+    --rose: #C1798A;
+    --rose-light: #F3DCE1;
+    --sage-light: #E8EAE1;
+    --cream: #FBF1EE;
+    --ink: #3A3A34;
+    --grey: #9C9690;
+    --line: #E6DAD3;
+    --bg: var(--cream);
+    --card-bg: #FFFFFF;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #2A2622; --card-bg: #35302B; --ink: #F1EBE6; --line: #4A423B; --grey: #B8ADA3;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #2A2622; --card-bg: #35302B; --ink: #F1EBE6; --line: #4A423B; --grey: #B8ADA3;
+  }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); height: 100%; }
+  * { box-sizing: border-box; }
+  body {
+    height: 100%; margin: 0; background: var(--bg); color: var(--ink);
+    font-family: 'Nunito', sans-serif; display: flex; flex-direction: column;
+    align-items: center; padding: 32px 20px 40px; min-height: 100vh;
+  }
+  .wrap { width: 100%; max-width: 480px; display: flex; flex-direction: column; align-items: center; }
+  h1 { font-family: 'Cormorant', serif; font-style: italic; font-weight: 600; font-size: 38px; margin: 28px 0 22px; text-align: center; }
+
+  .filter-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-bottom: 10px; width: 100%; }
+  .chip {
+    font-family: 'Comfortaa', cursive; font-size: 12px; letter-spacing: 1px; padding: 9px 16px;
+    border-radius: 999px; border: 1.5px solid var(--line); background: var(--card-bg);
+    color: var(--grey); cursor: pointer; transition: all 0.15s ease;
+  }
+  .chip.active { background: var(--rose); border-color: var(--rose); color: white; }
+  .chip[data-cat="verb"].active { background: #B45C6E; border-color: #B45C6E; }
+  .chip[data-cat="adj"].active { background: var(--olive); border-color: var(--olive); }
+  .chip[data-cat="noun"].active { background: #A68B5B; border-color: #A68B5B; }
+  .chip:hover { transform: translateY(-1px); }
+
+  .pool-count { font-family: 'Comfortaa', cursive; font-size: 12px; color: var(--grey); margin-bottom: 18px; }
+
+  .card {
+    width: 100%; background: var(--card-bg); border-radius: 24px; padding: 46px 28px; text-align: center;
+    box-shadow: 0 8px 30px rgba(107, 115, 85, 0.10); min-height: 200px; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; position: relative; overflow: hidden; transition: background 0.25s ease;
+  }
+  .card.cat-verb { background: var(--rose-light); }
+  .card.cat-adj { background: var(--sage-light); }
+  .card.cat-noun { background: #F1E6D3; }
+  :root[data-theme="dark"] .card.cat-verb, :root:not([data-theme="light"]) .card.cat-verb { background: #4A3540; }
+  :root[data-theme="dark"] .card.cat-adj, :root:not([data-theme="light"]) .card.cat-adj { background: #3A4038; }
+  :root[data-theme="dark"] .card.cat-noun, :root:not([data-theme="light"]) .card.cat-noun { background: #423A2C; }
+
+  .tier-label { font-family: 'Comfortaa', cursive; font-size: 13px; letter-spacing: 5px; color: var(--rose); font-weight: 700; margin-bottom: 16px; }
+  .word { font-family: 'Cormorant', serif; font-style: italic; font-weight: 600; font-size: 46px; line-height: 1.2; color: var(--ink); word-break: break-word; }
+  .definition { font-family: 'Nunito', sans-serif; font-size: 16px; color: var(--grey); margin-top: 14px; max-width: 360px; line-height: 1.4; }
+  .start-hint { font-family: 'Nunito', sans-serif; font-size: 16px; color: var(--grey); }
+
+  .button-row { display: flex; gap: 12px; width: 100%; margin-top: 22px; }
+  button.action {
+    flex: 1; font-family: 'Comfortaa', cursive; font-size: 14px; letter-spacing: 1px; padding: 16px 10px;
+    border-radius: 16px; border: none; cursor: pointer; transition: transform 0.1s ease, opacity 0.1s ease;
+  }
+  button.action:active { transform: scale(0.97); }
+  .btn-reset { background: var(--card-bg); color: var(--grey); border: 1.5px solid var(--line); flex: 0 0 auto; padding: 16px 20px; }
+  .btn-draw { background: var(--rose); color: white; flex: 1; }
+  .btn-draw:disabled { opacity: 0.5; }
+
+  footer { margin-top: 34px; font-family: 'Cormorant', serif; font-style: italic; color: var(--rose); font-size: 15px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Dependent Preposition</h1>
+
+  <div class="card" id="wordCard">
+    <div class="tier-label" id="tierLabel">READY</div>
+    <div class="word" id="wordText">Tap Draw to start</div>
+    <div class="definition" id="defText"></div>
+  </div>
+
+  <div class="button-row">
+    <button class="action btn-reset" id="resetBtn">Reset Pool</button>
+    <button class="action btn-draw" id="drawBtn">Draw</button>
+  </div>
+
+  <footer>Here's where your confidence blooms.</footer>
+</div>
+
+<script>
+  const WORDS = {
+    verb: ["rely on","worry about","complain about","apply for","agree with","disagree with","deal with","believe in","care about","dream of/about","insist on","wait for","look for","look after","listen to","laugh at","think about","talk to","ask for","apologize for","blame someone for","congratulate someone on","compare something to","consist of","concentrate on","depend on","participate in","prepare for","recover from","respond to","search for","stare at","subscribe to","succeed in","suffer from","approve of","arrive at/in","belong to","benefit from","cope with","count on","differ from","escape from","forgive someone for","hope for","invite someone to","lead to","object to","pay for","pray for","prevent someone from","react to","refer to","spend time on","vote for","warn someone about","work on"],
+    adj: ["proud of","afraid of","interested in","good at","bad at","tired of","bored with","angry at/with","worried about","excited about","famous for","responsible for","capable of","aware of","ashamed of","jealous of","satisfied with","disappointed with/in","familiar with","similar to","different from","married to","engaged to","related to","dependent on","sorry for/about","scared of","fond of","keen on","curious about","nervous about","confident about","upset about","embarrassed about","grateful for","guilty of","suspicious of","addicted to","compatible with","content with","crazy about","enthusiastic about","obsessed with","patient with","sick of","suitable for"],
+    noun: ["reason for","solution to","answer to","relationship with","connection between/to","interest in","need for","respect for","cause of","effect on","increase in","decrease in","reaction to","difference between","advantage of","disadvantage of","access to","attitude towards","belief in","cure for","demand for","example of","experience of/in","invitation to","knowledge of","love of/for","opinion of/about","pride in","problem with","request for","responsibility for","success in","trouble with","approach to"]
+  };
+
+  const DEFS = {
+    "rely on": "to trust or depend on someone or something",
+    "worry about": "to feel anxious about something",
+    "complain about": "to express dissatisfaction with something",
+    "apply for": "to formally request something, like a job or program",
+    "agree with": "to have the same opinion as someone",
+    "disagree with": "to have a different opinion from someone",
+    "deal with": "to handle or manage a situation",
+    "believe in": "to have faith or confidence in something",
+    "care about": "to feel that something matters to you",
+    "dream of/about": "to imagine or hope for something",
+    "insist on": "to demand something firmly",
+    "wait for": "to stay somewhere until something happens",
+    "look for": "to search for something",
+    "look after": "to take care of someone or something",
+    "listen to": "to pay attention to sounds or someone speaking",
+    "laugh at": "to find something funny, or to mock someone",
+    "think about": "to consider something",
+    "talk to": "to speak with someone",
+    "ask for": "to request something",
+    "apologize for": "to say sorry for something",
+    "blame someone for": "to hold someone responsible for something bad",
+    "congratulate someone on": "to praise someone for an achievement",
+    "compare something to": "to show how two things are similar",
+    "consist of": "to be made up of certain parts",
+    "concentrate on": "to focus your attention on something",
+    "depend on": "to need someone or something in order to happen",
+    "participate in": "to take part in something",
+    "prepare for": "to get ready for something",
+    "recover from": "to get better after an illness or hard time",
+    "respond to": "to reply or react to something",
+    "search for": "to look carefully for something",
+    "stare at": "to look at something for a long time",
+    "subscribe to": "to sign up for a regular service",
+    "succeed in": "to achieve something you were trying to do",
+    "suffer from": "to experience pain or an illness",
+    "approve of": "to think something is good or acceptable",
+    "arrive at/in": "to reach a place",
+    "belong to": "to be a member of, or owned by, something",
+    "benefit from": "to gain something useful from something",
+    "cope with": "to manage a difficult situation",
+    "count on": "to trust someone to do something",
+    "differ from": "to be different than something else",
+    "escape from": "to get away from a place or situation",
+    "forgive someone for": "to stop being angry about something someone did",
+    "hope for": "to wish for something to happen",
+    "invite someone to": "to ask someone to come to an event",
+    "lead to": "to result in something",
+    "object to": "to disagree with or oppose something",
+    "pay for": "to give money in exchange for something",
+    "pray for": "to ask a higher power for help with something",
+    "prevent someone from": "to stop someone from doing something",
+    "react to": "to respond to something that happens",
+    "refer to": "to mention or point to something",
+    "spend time on": "to use time doing something",
+    "vote for": "to choose someone or something in an election",
+    "warn someone about": "to tell someone about a danger",
+    "work on": "to try to improve or complete something",
+
+    "proud of": "feeling satisfaction about an achievement",
+    "afraid of": "feeling fear about something",
+    "interested in": "wanting to know more about something",
+    "good at": "skilled at doing something",
+    "bad at": "not skilled at doing something",
+    "tired of": "annoyed by something that has gone on too long",
+    "bored with": "no longer interested in something",
+    "angry at/with": "feeling anger toward someone",
+    "worried about": "feeling anxious about something",
+    "excited about": "feeling enthusiastic about something",
+    "famous for": "well known because of something",
+    "responsible for": "in charge of, or to blame for, something",
+    "capable of": "able to do something",
+    "aware of": "knowing that something exists",
+    "ashamed of": "feeling embarrassed about something",
+    "jealous of": "wanting what someone else has",
+    "satisfied with": "pleased with something",
+    "disappointed with/in": "feeling let down by someone or something",
+    "familiar with": "already knowing about something",
+    "similar to": "almost the same as something",
+    "different from": "not the same as something",
+    "married to": "legally joined to someone as a spouse",
+    "engaged to": "promised to marry someone",
+    "related to": "connected by family or by topic",
+    "dependent on": "needing something to survive or function",
+    "sorry for/about": "feeling regret about something",
+    "scared of": "feeling fear about something",
+    "fond of": "having a liking for someone or something",
+    "keen on": "enthusiastic about something",
+    "curious about": "wanting to learn more about something",
+    "nervous about": "feeling worried before something happens",
+    "confident about": "feeling sure about something",
+    "upset about": "feeling sad or angry about something",
+    "embarrassed about": "feeling shy or uncomfortable about something",
+    "grateful for": "thankful for something",
+    "guilty of": "responsible for doing something wrong",
+    "suspicious of": "not trusting someone or something",
+    "addicted to": "unable to stop doing or using something",
+    "compatible with": "able to work well together with something",
+    "content with": "satisfied with what you have",
+    "crazy about": "loving something a lot (informal)",
+    "enthusiastic about": "very excited and interested in something",
+    "obsessed with": "thinking about something constantly",
+    "patient with": "staying calm with someone or something difficult",
+    "sick of": "very tired or annoyed by something (informal)",
+    "suitable for": "appropriate for a particular purpose",
+
+    "reason for": "the cause or explanation for something",
+    "solution to": "the answer to a problem",
+    "answer to": "a reply to a question",
+    "relationship with": "a connection between people",
+    "connection between/to": "a link between two things",
+    "interest in": "curiosity or attention toward something",
+    "need for": "a requirement for something",
+    "respect for": "admiration for someone or something",
+    "cause of": "the thing that makes something happen",
+    "effect on": "the result of something on another thing",
+    "increase in": "a rise in the amount of something",
+    "decrease in": "a drop in the amount of something",
+    "reaction to": "a response to something",
+    "difference between": "how two things are not the same",
+    "advantage of": "a benefit of something",
+    "disadvantage of": "a drawback of something",
+    "access to": "the ability to use or enter something",
+    "attitude towards": "how someone feels about something",
+    "belief in": "trust or faith in something",
+    "cure for": "a solution that fixes an illness or problem",
+    "demand for": "a need or desire for something",
+    "example of": "an instance of something",
+    "experience of/in": "knowledge gained from doing something",
+    "invitation to": "a request for someone to attend something",
+    "knowledge of": "understanding or awareness of something",
+    "love of/for": "strong affection for something",
+    "opinion of/about": "a personal view about something",
+    "pride in": "a feeling of satisfaction about something",
+    "problem with": "an issue involving something",
+    "request for": "an act of asking for something",
+    "responsibility for": "a duty or obligation toward something",
+    "success in": "achievement of a goal",
+    "trouble with": "difficulty with something",
+    "approach to": "a method of dealing with something"
+  };
+
+  const LABELS = { verb: "VERB + PREP", adj: "ADJECTIVE + PREP", noun: "NOUN + PREP" };
+  const CATS = ["verb", "adj", "noun"];
+
+  let pool = [];
+
+  const wordCard = document.getElementById('wordCard');
+  const wordText = document.getElementById('wordText');
+  const tierLabel = document.getElementById('tierLabel');
+  const drawBtn = document.getElementById('drawBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const defText = document.getElementById('defText');
+
+  function shuffle(arr) {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  function buildPool() {
+    let entries = [];
+    CATS.forEach(cat => {
+      WORDS[cat].forEach(w => entries.push({ word: w, cat }));
+    });
+    return shuffle(entries);
+  }
+
+  function totalCount() {
+    return CATS.reduce((sum, c) => sum + WORDS[c].length, 0);
+  }
+
+  function resetPool() {
+    pool = buildPool();
+    wordCard.className = "card";
+    tierLabel.textContent = "READY";
+    wordText.textContent = "Tap Draw to start";
+    defText.textContent = "";
+    drawBtn.disabled = false;
+  }
+
+  function draw() {
+    if (pool.length === 0) {
+      resetPool();
+      return;
+    }
+    const entry = pool.pop();
+    wordText.textContent = entry.word;
+    defText.textContent = DEFS[entry.word] || "";
+    tierLabel.textContent = LABELS[entry.cat];
+    wordCard.className = "card cat-" + entry.cat;
+    if (pool.length === 0) {
+      tierLabel.textContent += " · LAST ONE";
+    }
+  }
+
+  drawBtn.addEventListener('click', draw);
+  resetBtn.addEventListener('click', resetPool);
+
+  resetPool();
+</script>
+</body>
+</html>
